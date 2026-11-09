@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= e(data.invoice.number || "Draft invoice") %></title>
+<style><%= data.css %></style></head>
+<body style="--accent:<%= data.color %>">
+<%= if data.preview do %><div class="document-toolbar"><a href="/">Back to workspace</a><span>Invoice preview</span><a class="download" href="/invoices/<%= e(data.invoice.id) %>/pdf<%= if data.include_payments, do: "?payments=1", else: "" %>">Download PDF</a><a href="?payments=1">Include payment history</a><button type="button" onclick="window.print()">Print / Save as PDF</button></div><% end %>
+<article class="invoice-sheet <%= data.template %>">
+  <header class="invoice-header">
+    <div class="company-identity">
+      <%= if image(data.company["logo_data"]) do %><div class="logo-box"><img class="company-logo" src="<%= e(image(data.company["logo_data"])) %>" alt="Company logo"></div><% end %>
+      <h1><%= e(data.company["legal_name"] || data.company["name"]) %></h1>
+      <div class="company-details">
+        <p class="multiline"><%= e(data.company["address"]) %></p>
+        <p><%= e(data.company["email"]) %><%= if present?(data.company["email"]) and present?(data.company["phone"]), do: " · " %><%= e(data.company["phone"]) %></p>
+        <p><%= e(data.company["website"]) %></p>
+        <%= if present?(data.company["tax_id"]) do %><p>Tax ID / PIN: <%= e(data.company["tax_id"]) %></p><% end %>
+        <%= if present?(data.company["registration_number"]) do %><p>Registration: <%= e(data.company["registration_number"]) %></p><% end %>
+      </div>
+    </div>
+    <div class="invoice-identity">
+      <p class="document-title"><%= e(data.company["invoice_title"] || "INVOICE") %></p>
+      <p class="invoice-number"><%= e(data.invoice.number || "DRAFT") %></p>
+      <span class="status"><%= e(if data.invoice.status == "draft", do: "Draft · not issued", else: if(data.invoice.status == "paid", do: "Paid", else: "Issued")) %></span>
+    </div>
+  </header>
+  <div class="parties">
+    <div class="bill-to"><p class="caption">BILL TO</p><h2><%= e(data.customer["name"]) %></h2><p class="multiline"><%= e(data.customer["address"]) %></p><p><%= e(data.customer["email"]) %></p><p><%= e(data.customer["phone"]) %></p><%= if present?(data.customer["tax_id"]) do %><p>Tax ID / PIN: <%= e(data.customer["tax_id"]) %></p><% end %></div>
+    <dl class="invoice-dates"><div><dt>Invoice date</dt><dd><%= e(data.invoice.issue_date || "Not issued") %></dd></div><div><dt>Due date</dt><dd><%= e(data.invoice.due_date) %></dd></div><div><dt>Currency</dt><dd><%= e(data.invoice.currency) %></dd></div></dl>
+  </div>
+  <table class="items"><thead><tr><th class="line-number">#</th><th>Description</th><th>Billing</th><th class="numeric">Rate</th><th class="numeric">Amount</th></tr></thead><tbody>
+  <%= for {line, index} <- Enum.with_index(data.invoice.lines, 1) do %><tr><td class="line-number"><%= index %></td><td class="description"><%= e(line["description"]) %><%= if present?(line["notes"]) do %><p class="line-detail multiline"><%= e(line["notes"]) %></p><% end %><%= for parameter <- Map.get(line, "parameters", []), parameter["kind"] != "multiplier" and parameter["value"] != "" do %><p class="line-detail"><%= e(parameter["label"]) %>: <%= e(parameter["value"]) %></p><% end %></td><td class="billing-factors"><%= e(Waves.BillingLine.explanation(line)) %></td><td class="numeric"><%= money(line["unit_price"]) %></td><td class="numeric"><%= money(line["total"]) %></td></tr><% end %>
+  </tbody></table>
+  <%= if data.invoice.tax_mode == "inclusive" do %><p class="tax-note">Line amounts include <%= e(data.invoice.tax_name) %>. Tax is extracted from the amount shown.</p><% end %>
+  <div class="settlement">
+    <div class="payment-block"><%= if present?(data.company["payment_details"]) do %><h3>Payment details</h3><p class="multiline"><%= e(data.company["payment_details"]) %></p><% end %></div>
+    <div class="totals">
+      <div><span>Subtotal (before tax)</span><strong><%= money(data.invoice.subtotal || data.invoice.total) %></strong></div>
+      <%= if data.invoice.tax_mode != "none" do %><div><span><%= e(data.invoice.tax_name) %> (<%= e(data.invoice.tax_rate) %>%)</span><strong><%= money(data.invoice.tax_total) %></strong></div><% end %>
+      <div class="grand-total"><span>Total <%= e(data.invoice.currency) %></span><strong><%= money(data.invoice.total) %></strong></div>
+      <div><span>Amount paid (<%= data.invoice.payment_count || 0 %> payments)</span><strong><%= money(data.invoice.paid) %></strong></div>
+      <div class="balance"><span>Balance due <%= e(data.invoice.currency) %></span><strong><%= money(Decimal.sub(data.invoice.total, data.invoice.paid)) %></strong></div>
+    </div>
+  </div>
+  <%= if data.invoice.last_payment_date do %><p class="tax-note">Latest payment: <%= e(Waves.Finance.payment_label(data.invoice.last_payment_method)) %> · <%= e(data.invoice.last_payment_date) %></p><% end %>
+  <%= if data.payments != [] do %><div class="payment-history"><h3>Payment history</h3><table class="items"><thead><tr><th>Date</th><th>Method</th><th>Reference</th><th class="numeric">Amount</th></tr></thead><tbody><%= for payment <- data.payments do %><tr><td><%= e(payment.received_on) %></td><td><%= e(Waves.Finance.payment_label(payment.method)) %></td><td><%= e(payment.reference) %></td><td class="numeric"><%= money(payment.amount) %></td></tr><% end %></tbody></table></div><% end %>
+  <%= if present?(data.invoice.notes) do %><div class="document-notes"><h3>Note</h3><p class="multiline"><%= e(data.invoice.notes) %></p></div><% end %>
+  <%= if present?(data.invoice.terms) do %><div class="document-terms"><h3>Terms & conditions</h3><p class="multiline"><%= e(data.invoice.terms) %></p></div><% end %>
+  <div class="approval <%= data.position %>">
+    <div class="approval-images">
+      <%= if data.company["show_signature"] == true and image(data.company["signature_data"]) do %><img class="signature" src="<%= e(image(data.company["signature_data"])) %>" alt="Authorised signature"><% end %>
+      <%= if data.company["show_stamp"] == true and image(data.company["stamp_data"]) do %><img class="stamp" style="width:<%= data.stamp_width %>px" src="<%= e(image(data.company["stamp_data"])) %>" alt="Company stamp"><% end %>
+    </div>
+    <%= if present?(data.company["signatory_name"]) do %><p class="signatory"><%= e(data.company["signatory_name"]) %></p><p class="signatory-title"><%= e(data.company["signatory_title"]) %></p><% end %>
+  </div>
+  <footer><p class="multiline"><%= e(data.company["invoice_footer"]) %></p><span><%= e(data.invoice.number || "DRAFT") %></span></footer>
+</article>
+</body></html>

@@ -1,0 +1,57 @@
+<div class="shell">
+  <aside>
+    <div class="brand">W / Finance</div><p class="business">{@business.name}</p>
+    <nav><a href="/">Invoices & customers</a><a class="active" href="/settings">Business settings</a></nav>
+    <p class="aside-note">Business-specific branding<br />Issued documents retain their details.</p>
+  </aside>
+  <main>
+    <header><div><p class="eyebrow">MAKE IT YOURS</p><h1>Business settings</h1><p class="muted">Company details, taxes and a document style that feels like your business.</p></div><a class="button" href="/">Back to invoices</a></header>
+    <p :if={@flash["info"]} class="flash" role="status">{@flash["info"]}</p><p :if={@flash["error"]} class="error" role="alert">{@flash["error"]}</p>
+    <.form for={@form} id="settings-form" phx-change="validate" phx-submit="save">
+      <div class="settings-grid"><div>
+        <section><p class="eyebrow">01 / YOUR BUSINESS</p><h2>Company details</h2><div class="form-grid">
+          <.field field={@form[:name]} label="Display name" /><.field field={@form[:legal_name]} label="Registered / legal name" />
+          <.field field={@form[:email]} label="Email" type="email" /><.field field={@form[:phone]} label="Phone" />
+          <.field field={@form[:website]} label="Website" /><.field field={@form[:tax_id]} label="Tax registration / PIN" />
+          <.field field={@form[:registration_number]} label="Company registration number" />
+        </div><.field field={@form[:address]} label="Company address" type="textarea" /></section>
+        <section><p class="eyebrow">02 / NUMBERS & TAX</p><h2>Invoice defaults</h2><div class="form-grid">
+          <.field field={@form[:invoice_title]} label="Document title" /><.field field={@form[:invoice_prefix]} label="Number prefix" />
+          <.field field={@form[:default_due_days]} label="Default due days" type="number" />
+          <.field field={@form[:tax_name]} label="Tax label" /><.field field={@form[:tax_rate]} label="Default tax rate (%)" type="number" />
+          <.field field={@form[:tax_mode]} label="How prices include tax" type="select" options={[{"No tax", "none"}, {"Add tax to prices", "exclusive"}, {"Prices already include tax", "inclusive"}]} />
+        </div><p class="subtle">No rate is assumed. Configure the rates that apply to your business. Defaults can be overridden on a new invoice. Existing amounts stay unchanged.</p></section>
+        <section><p class="eyebrow">03 / WORDS THAT MATTER</p><h2>Payment & document text</h2>
+          <.field field={@form[:payment_details]} label="Payment instructions / bank / mobile money details" type="textarea" />
+          <.field field={@form[:invoice_notes]} label="Default customer note" type="textarea" />
+          <.field field={@form[:invoice_terms]} label="Default terms and conditions" type="textarea" />
+          <.field field={@form[:invoice_footer]} label="Footer message" type="textarea" />
+        </section>
+        <section><p class="eyebrow">04 / YOUR MARK</p><h2>Logo, stamp & signature</h2><div class="assets-grid">
+          <.asset upload={@uploads.logo} kind="logo" existing={@business.logo_data} />
+          <.asset upload={@uploads.stamp} kind="stamp" existing={@business.stamp_data} />
+          <.asset upload={@uploads.signature} kind="signature" existing={@business.signature_data} />
+        </div><div class="form-grid">
+          <.field field={@form[:show_stamp]} label="Show stamp on invoices" type="checkbox" /><.field field={@form[:show_signature]} label="Show signature on invoices" type="checkbox" />
+          <.field field={@form[:stamp_width]} label="Stamp width (60–220 pixels)" type="number" />
+          <.field field={@form[:stamp_position]} label="Stamp / signature position" type="select" options={[{"Left", "left"}, {"Centre", "center"}, {"Right", "right"}]} />
+          <.field field={@form[:signatory_name]} label="Authorised signatory name" /><.field field={@form[:signatory_title]} label="Signatory role / title" />
+        </div></section>
+      </div><div class="settings-preview">
+        <section><p class="eyebrow">05 / LOOK & FEEL</p><h2>Document style</h2>
+          <.field field={@form[:accent_color]} label="Brand colour" type="color" />
+          <.field field={@form[:invoice_template]} label="Invoice layout" type="select" options={[{"Modern — bold colour header", "modern"}, {"Classic — formal and structured", "classic"}, {"Minimal — clean and understated", "minimal"}]} />
+          <p class="saved-color">Saved colour: <span class="color-swatch" style={"background-color: #{safe_color(@business.accent_color)}"}></span><strong>{safe_color(@business.accent_color)}</strong></p>
+          <div class="brand-card">
+            <div class="mini-invoice-header" style={"background-color: #{safe_color(@preview.accent_color)};color: #{contrast_color(@preview.accent_color)}"}><strong>{@preview.invoice_title}</strong><span>INV-000001</span></div>
+            <img :if={@business.logo_data} src={@business.logo_data} alt="Saved company logo" />
+            <h3>{@preview.legal_name || @preview.name}</h3><p class="multiline subtle">{@preview.address}</p>
+            <div class="mini-invoice-table"><span>Description</span><span>Amount</span><span>Service</span><span>1,000.00</span></div>
+            <div class="mini-invoice-total" style={"border-color: #{safe_color(@preview.accent_color)}"}>Total <strong>1,000.00</strong></div>
+          </div><p class="subtle">The preview updates as you choose a colour. Save settings, then use View invoice to see the complete document.</p>
+          <button class="primary save-settings" phx-disable-with="Saving settings…">Save all settings</button>
+        </section>
+      </div></div>
+    </.form>
+  </main>
+</div>

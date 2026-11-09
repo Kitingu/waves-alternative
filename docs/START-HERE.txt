@@ -1,0 +1,14 @@
+WAVES ALTERNATIVE 0.3 — START HERE
+
+Already running the project? Read docs/UPGRADE-0.3.md.
+Keep your .env and database. Apply source changes, run mix deps.get,
+mix ecto.migrate, mix assets.build, mix test, then restart Phoenix.
+
+Products & services now saves reusable items. Each invoice line declares its own
+charge multipliers and descriptive details. Microphones 4 x Days 3 x Rate 10 = 120.
+Other lines can independently use different parameters or a fixed charge.
+Invoice preview/PDF shows the factors and descriptive fields.
+
+Business settings retains the default colour; a new invoice also has its own colour picker.
+Existing invoice/payment/tax/branding functionality is preserved.
+New server tests still need to run on your machine.
